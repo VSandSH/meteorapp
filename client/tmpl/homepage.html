@@ -1,0 +1,20 @@
+<template name="homepage">
+
+    <nav class="navbar navbar-fixed-top navbar-inverse">
+        <div class="navbar-inner">
+        <!-- <a class="brand" href="#">Meteor App</a>-->
+            <div>
+                <ul class="nav nav-pills">
+		    {{#if currentUser}}
+                    <li class="active"><a href="/objects">Objects</a></li>
+                    <li><a href="/geoportal">Geoportal</a></li>
+		    {{/if}}
+                    <li><a href="#">{{> loginButtons}}</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="page-header">
+	<p>Please sign in</p>
+    </div>
+</template>

@@ -1,0 +1,73 @@
+<template name="objects">
+    <nav class="navbar navbar-fixed-top navbar-inverse">
+        <div class="navbar-inner">
+        <!-- <a class="brand" href="#">Meteor App</a>-->
+            <div>
+                <ul class="nav nav-pills">
+		    {{#if currentUser}}
+                    <li class="active"><a href="/">Objects</a></li>
+                    <li><a href="/geoportal">Geoportal</a></li>
+		    {{/if}}
+		    <li><a href="#">{{> loginButtons}}</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>    
+    {{#if currentUser}}
+    {{#if showProjectDialog}}
+    {{> editingForm}}
+    {{/if}}
+
+    {{#if showObjectUpdateDialog}}
+        {{> updatingForm}}
+    {{/if}}
+
+    <div class="container-fluid">
+        <div class="row-fluid">
+            <div class="page-header">
+		<h1>Objects</h1>
+	    </div>
+	    <div class="button-addObject">
+	    <button class="btn btn-medium btn-success addObject">Add Object</button>
+	    </div>
+	    <table class="table table-bordered table-striped table-hover">
+		<p>*For updating a record double-click on it.</p>
+                {{> reactiveTable collection=objects settings=settings}}
+            </table>
+	</div>
+    </div>
+    {{/if}}
+</template>
+
+
+<template name="updatingForm">
+    <div id="example" class="modal">
+        <div class="modal-header">
+            <a class="close" data-dismiss="modal">x</a>
+            <h3>Update Object</h3>
+        </div>
+        <div class="modal-body">
+            {{> quickForm id="updateObjectForm" schema=Schemas.Obj type="update" collection="Objects" doc=selectedDoc}}
+	    {{> quickRemoveButton collection="Objects" _id=selectedDoc._id class="btn btn-danger" beforeRemove=beforeRemove}}
+            <a href="#" class="btn cancel" data-dismiss="modal">Cancel</a>
+        </div>
+        <div class="modal-footer">
+        </div>
+    </div>
+</template>
+
+
+<template name="editingForm">
+    <div id="example" class="modal">
+        <div class="modal-header">
+	    <a class="close" data-dismiss="modal">x</a>
+	    <h3>Add Object</h3>
+	</div>
+	<div class="modal-body">
+            {{> quickForm id="insertObjectForm" schema=Schemas.Obj type="insert" collection="Objects" doc=selectedDoc}}
+	    <a href="#" class="btn cancel" data-dismiss="modal">Cancel</a>
+	</div>
+	<div class="modal-footer">
+	</div>
+    </div>
+</template>

@@ -1,0 +1,55 @@
+<template name="geoportal">
+    <nav class="navbar navbar-fixed-top navbar-inverse">
+        <div class="navbar-inner">
+        <!-- <a class="brand" href="#">Meteor App</a>-->
+            <div>
+                <ul class="nav nav-pills">
+                    <li ><a href="/">Objects</a></li>
+                    <li class="active"><a href="/geoportal">Geoportal</a></li>
+		    <li><a href="#">{{> loginButtons}}</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    {{#if currentUser}}
+    <div class="container-fluid">
+        <div class="row-fluid">
+            <div class="page-header">
+		<h1>Geoportal</h1>
+		{{> map}}
+	    </div>
+	</div>
+    </div>
+    <div class="geofilter-desc"><p>For showing markers on map select type categories:</p></div>
+    {{> selects}}
+    {{/if}}
+</template>
+
+
+
+<template name="map">
+
+    {{#if showGeoUpdateDialog}}
+    {{> editingForm}}
+    {{/if}}
+
+    <div class="map-container">
+	{{> googleMap name="map" options=mapOptions}}
+    </div>
+</template>
+
+
+
+<template name="selects">
+<form class="filters" role="form">
+    <label class="checkbox-inline"><input id="ii" type="checkbox" class="chBox" name="filter" value="Infrastructure"> Infrastructure </label>    
+    <label class="checkbox-inline"><input id="ii" type="checkbox" class="chBox" name="filter" value="Facility"> Facility </label>    
+    <label class="checkbox-inline"><input id="ii" type="checkbox" class="chBox" name="filter" value="Person"> Person </label>    
+    <label class="checkbox-inline"><input id="ii" type="checkbox" class="chBox" name="filter" value="Transportation"> Transportation </label>    
+    <label class="checkbox-inline"><input id="ii" type="checkbox" class="chBox" name="filter" value="Territory"> Territory </label>    
+    <p><label class="checkbox-inline"><input id="ii" type="checkbox" class="chBox" name="filter" value="Undefined"> Undefined </label></p>
+    <label class="checkbox-inline"><input id="ii" type="checkbox" class="chBoxFast" name="filter" value="DeselectAll"> Deselect all </label>
+    <label class="checkbox-inline"><input id="ii" type="checkbox" class="chBoxFast" name="filter" value="SelectAll"> Select all </label>
+</form>
+</template>
