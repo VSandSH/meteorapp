@@ -298,60 +298,50 @@ if (Meteor.isClient) {
 	        //console.log(keys);
 	        for (var i = 0; i < keys.length; i++) {
     		    markers[keys[i]].setMap(null);
+		    //google.maps.event.clearInstanceListeners(markers[keys[i]]);
+		    //delete markers[keys[i]];
 	        }
 	        markers = [];
 
-	        Objects.find({type:{ $in: selectedFilters}}).observe({
-    	            added: function(document) {
-        	        // Create a marker for this document
-        	        var marker = new google.maps.Marker({
-            	            //draggable: true,
-            	            animation: google.maps.Animation.DROP,
-            	            position: new google.maps.LatLng(document.location.lat, document.location.lng),
-            	            map: map.instance,
-	    	            icon: icons[document.type].icon,
-            	            // We store the document _id on the marker in order 
-             	            // to update the document within the 'dragend' event below.
-            	            id: document._id
-        	        });
+		var markersObj = Objects.find({type:{ $in: selectedFilters}}).fetch();
+		markersObj.forEach(function(doc){
+                    var marker = new google.maps.Marker({
+                        //draggable: true,
+                        animation: google.maps.Animation.DROP,
+                        position: new google.maps.LatLng(doc.location.lat, doc.location.lng),
+                        map: map.instance,
+                        icon: icons[doc.type].icon,
+                        // We store the document _id on the marker in order
+                        // to update the document within the 'dragend' event below.
+                        id: doc._id
+                    });		    
+                    markers[doc._id] = marker;
+		    console.log(doc._id);
+                    // text template for infowindow of a marker
+                    var infowindow = new google.maps.InfoWindow({
+                        content:
+                            '<div id="content">'+
+                            '<div id="siteNotice">'+
+                            '<h1 id="firstHeading" class="firstHeading">Object:</h1>' +
+                            '<div id="bodyContent">'+
+                            '<p><b>Type: </b>'+ document.type + '</p>' +
+                            '<p><b>Name: </b>'+ document.name + '</p>' +
+                            '<p><b>Severity Level: </b>'+ document.slevel + '</p>' +
+                            '<p><b>Description: </b>'+ document.description + '</p>' +
+                            '<p><b>Geolocation: </b></p>' +
+                            '<p><b>Latitude: </b> '+ document.location.lat + '</p>' +
+                            '<p><b>Longitude: </b> '+ document.location.lng + '</p>' +
+                            //'<button class="markerButton">Edit object</button>'+
+                            '</div>'+
+                            '</div>'
+                    });
 
-		        // text template for infowindow of a marker
-		        var infowindow = new google.maps.InfoWindow({
-	    	            content:
-			        '<div id="content">'+
-			        '<div id="siteNotice">'+
-			        '<h1 id="firstHeading" class="firstHeading">Object:</h1>'+
-			        '<div id="bodyContent">'+
-			        '<p><b>Type: </b>'+ document.type + '</p>' +
-			        '<p><b>Name: </b>'+ document.name + '</p>' +
-			        '<p><b>Severity Level: </b>'+ document.slevel + '</p>' +
-			        '<p><b>Description: </b>'+ document.description + '</p>' +
-			        '<p><b>Geolocation: </b></p>' + 
-			        '<p><b>Latitude: </b> '+ document.location.lat + '</p>' +
-			        '<p><b>Longitude: </b> '+ document.location.lng + '</p>' +
-			        //'<button class="markerButton">Edit object</button>'+
-			        '</div>'+
-			        '</div>'
-		        });
-
-		        // pop up infowindow upon click on marker
-		        google.maps.event.addListener(marker,'click', function(event){
-	    	            console.log("marker clicked");
-	    	            infowindow.open(map.instance, marker);
-		        });
-
-			/* irrelevant for now
-        	        // This listener lets us drag markers on the map and update their corresponding document.
-        	        google.maps.event.addListener(marker, 'dragend', function(event) {
-            	            alert(event.latLng.lat() + " " + event.latLng.lng() + " (types: " + (typeof event.latLng.lat()) + ", " + (typeof event.latLng.lng()) + ")");
-                            Objects.update(marker.id, { $set: { location: {lat: parseFloat(event.latLng.lat()), lng: parseFloat(event.latLng.lng()) }}});
-        	        }); */
-
-        	        // Store this marker instance within the markers object.
-        	        markers[document._id] = marker;
-		        //console.log(document._id);
-	            }
-  	        });
+                    // pop up infowindow upon click on marker
+                    google.maps.event.addListener(marker,'click', function(event){
+                        console.log("marker clicked");
+                        infowindow.open(map.instance, marker);
+                    });
+		});
             }
         });
     /*	   
