@@ -8,7 +8,6 @@ if (Meteor.isClient) {
 	GoogleMaps.load();
     });
 
-    
     Template.map.helpers({  
         mapOptions: function() {
             if (GoogleMaps.loaded()) {
@@ -95,6 +94,7 @@ if (Meteor.isClient) {
     AutoForm.addHooks(['insertObjectForm','updateObjectForm'], {
 	onSuccess: function() {
 	    Session.set('showGeoUpdateDialog', false);
+	    Session.set('showObjectUpdateDialog', false);
 	    Session.set('showProjectDialog', false);
 	    Session.set('update_object', null);
 	}
@@ -304,6 +304,7 @@ if (Meteor.isClient) {
 	        markers = [];
 
 		var markersObj = Objects.find({type:{ $in: selectedFilters}}).fetch();
+
 		markersObj.forEach(function(doc){
                     var marker = new google.maps.Marker({
                         //draggable: true,
@@ -316,7 +317,8 @@ if (Meteor.isClient) {
                         id: doc._id
                     });		    
                     markers[doc._id] = marker;
-		    console.log(doc._id);
+		    //console.log(doc._id);
+
                     // text template for infowindow of a marker
                     var infowindow = new google.maps.InfoWindow({
                         content:
@@ -324,13 +326,13 @@ if (Meteor.isClient) {
                             '<div id="siteNotice">'+
                             '<h1 id="firstHeading" class="firstHeading">Object:</h1>' +
                             '<div id="bodyContent">'+
-                            '<p><b>Type: </b>'+ document.type + '</p>' +
-                            '<p><b>Name: </b>'+ document.name + '</p>' +
-                            '<p><b>Severity Level: </b>'+ document.slevel + '</p>' +
-                            '<p><b>Description: </b>'+ document.description + '</p>' +
+                            '<p><b>Type: </b>'+ doc.type + '</p>' +
+                            '<p><b>Name: </b>'+ doc.name + '</p>' +
+                            '<p><b>Severity Level: </b>'+ doc.slevel + '</p>' +
+                            '<p><b>Description: </b>'+ doc.description + '</p>' +
                             '<p><b>Geolocation: </b></p>' +
-                            '<p><b>Latitude: </b> '+ document.location.lat + '</p>' +
-                            '<p><b>Longitude: </b> '+ document.location.lng + '</p>' +
+                            '<p><b>Latitude: </b> '+ doc.location.lat + '</p>' +
+                            '<p><b>Longitude: </b> '+ doc.location.lng + '</p>' +
                             //'<button class="markerButton">Edit object</button>'+
                             '</div>'+
                             '</div>'
