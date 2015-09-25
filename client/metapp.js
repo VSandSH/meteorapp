@@ -5,18 +5,9 @@ Objects = new Meteor.Collection('objects');
 // client side
 if (Meteor.isClient) {
     Meteor.startup(function(){
-	GoogleMaps.load();
     });
 
     Template.map.helpers({  
-        mapOptions: function() {
-            if (GoogleMaps.loaded()) {
-                return {
-                    center: new google.maps.LatLng(-37.8136, 144.9631),
-        	    zoom: 8
-                };
-            }
-        }
     });
 
     // Define default sessions
@@ -24,7 +15,11 @@ if (Meteor.isClient) {
     Session.setDefault('showProjectDialog', false);
     Session.setDefault('update_object',null);
     Session.setDefault('showGeoUpdateDialog',false);
-
+    //Session.setDefault('marker', null);
+    Session.setDefault('createPolygonObject', false);
+    Session.setDefault('createMarkerObject', false);
+    Session.setDefault('fieldIsTerritory', false);
+    Session.setDefault('map', false);
 
     // On objects page fetch only 4 fields out of 5; define popup forms
     Template.objects.helpers({
@@ -55,13 +50,26 @@ if (Meteor.isClient) {
     });
 
 
-    // Confirmation for deleting a doc and returning selected doc's ID to selectedDoc attribute in 'quickForm'
     Template.updatingForm.helpers({
+        // returning selected doc's ID to selectedDoc attribute in 'quickForm'
         selectedDoc: function(){
 	    //return Objects.findOne({_id: Session.get('update_object')});
 	    return Session.get('update_object');
         },
 
+        // depending on the type of selected document display in pop-up update-form relevant geo-fields
+	typeIsTerritory: function(){
+	    var doc =  Session.get('update_object');
+	    //console.log(doc.type);
+	    if(doc != null){
+	    if(doc.type == 'Territory')
+		Session.set('fieldIsTerritory', true);
+	    else
+		Session.set('fieldIsTerritory', false);}
+	    return Session.get('fieldIsTerritory');
+	},
+
+	//  Confirmation for deleting a doc
         beforeRemove: function(){
 	    return function(collection, id){
 	        var doc = collection.findOne(id);
@@ -72,21 +80,42 @@ if (Meteor.isClient) {
         }
     });
 
-    // return location's coordinates to selectedDoc attribute in 'quickForm'
     Template.editingForm.helpers({
+        // return location's coordinates to selectedDoc attribute in 'quickForm'
         selectedDoc: function(){
             return Session.get('update_object');
-        }
+        },
+
+	// if a new object is created (not on map), set modifiable fields for geo-coordinates, otherwise (if on map) set non-modifiable fields for geo-coordinates
+	addingNewObject: function(){
+	    return Session.get('createNewObject');
+	},
+
+	// depending on where the object is created, set correct values for drop-down select "type" field
+        optionsList: function(){
+	    if(Session.get('createPolygonObject')){
+                    return [{label:"Territory", value: "Territory"}];
+            }
+	    if(Session.get('createMarkerObject')){
+		return [{label:"Facility", value: "Facility"},{label: "Transportation", value: "Transportation"},{label: "Infrastructure", value:"Infrastructure"},{label:"Person", value: "Person"},{label:"Undefined", value:"Undefined"}];
+	    }
+            if(Session.get('createNewObject')){
+                return [{label:"Facility", value: "Facility"},{label: "Transportation", value: "Transportation"},{label:"Territory", value: "Territory"},{label: "Infrastructure", value:"Infrastructure"},{label:"Person", value: "Person"},{label:"Undefined", value:"Undefined"}];
+            }
+	}
     });
+
 
     // show popup form on pressing a button and show a form for editing a doc
     Template.objects.events({
         'click .addObject': function(evt,tmpl){
 	    Session.set('showProjectDialog', true);
+	    Session.set('createNewObject', true);
         },
         'dblclick .reactive-table tbody tr': function(evt,tmpl){
 	    Session.set('update_object', Objects.findOne({_id: this._id}));  // pass dblclicked document's ID to updatingForm
 	    Session.set('showObjectUpdateDialog', true);
+	    //Session.set('createNewObject', true);
         }
     });
 
@@ -97,6 +126,10 @@ if (Meteor.isClient) {
 	    Session.set('showObjectUpdateDialog', false);
 	    Session.set('showProjectDialog', false);
 	    Session.set('update_object', null);
+	    //Session.set('showGeoUpdateDialog', false);
+	    Session.set('createPolygonObject', false);
+            Session.set('createMarkerObject', false);
+            Session.set('createNewObject', false);
 	}
     });
 
@@ -106,12 +139,32 @@ if (Meteor.isClient) {
             Session.set('showGeoUpdateDialog', false);
 	    Session.set('showProjectDialog', false);
 	    Session.set('update_object', null);
+	    Session.set('createPolygonObject', false);
+	    Session.set('createMarkerObject', false);
+	    Session.set('createNewObject', false);
         },
         'click .close': function(evt, tmpl){
             Session.set('showGeoUpdateDialog', false);
 	    Session.set('showProjectDialog', false);
 	    Session.set('update_object', null);
-        }
+	    Session.set('createPolygonObject', false);
+            Session.set('createMarkerObject', false);
+            Session.set('createNewObject', false);
+        },
+	'click .submButton': function(evt, tmpl){
+	    evt.preventDefault();
+	    if(AutoForm.validateField("insertObjectForm", "type") && 
+		AutoForm.validateField("insertObjectForm", "name") && 
+		AutoForm.validateField("insertObjectForm", "slevel") && 
+		AutoForm.validateField("insertObjectForm", "description") && 
+		AutoForm.validateField("insertObjectForm", "location")){
+	    console.log(AutoForm.validateField("insertObjectForm","name"));
+	    var formValues = AutoForm.getFormValues("insertObjectForm").insertDoc;
+	    Objects.insert(formValues);				// save form to database
+	    Session.set('showProjectDialog', false);}
+	    //else {console.log(AutoForm.validateField("insertObjectForm","type"))} 
+	    Session.set('update_object', null);
+	}
     });
 
     // hide updading form
@@ -137,18 +190,11 @@ if (Meteor.isClient) {
     Schemas.Obj = new SimpleSchema({
 
         type: {
-	    type: String,
-	    allowedValues: [
-	        "Facility",
-	        "Transportation",
-	        "Territory",
-	        "Infrastructure",
-	        "Person",
-	        "Undefined"
-	    ]
+	    type: String
         },
         name: {
 	    type: String,
+	    optional: false,
 	    max: 100
         },
         slevel: {
@@ -184,188 +230,53 @@ if (Meteor.isClient) {
 	    type: Number,
 	    decimal: true,
 	    label: "Longitude"
-	}
+	},
+	polygonLoc: {
+	    type: Array
+	},
+	'polygonLoc.$': {
+	    type: Object
+	},
+	'polygonLoc.$.H': {
+	    type: Number,
+	    decimal: true,
+	    label: "Latitude"
+	},
+        'polygonLoc.$.L': { 
+            type: Number,
+            decimal: true,
+	    label: "Longitude" 
+        }
     });
 
-    // show pop up form for editing a doc
+    /*// show pop up form for editing a doc
     Template.map.helpers({
+        showGeoUpdateDialog: function(){
+            return Session.get('showGeoUpdateDialog');
+        }
+    });*/
+
+    // show pop up form for editing a doc
+    Template.gMap.helpers({
         showGeoUpdateDialog: function(){
             return Session.get('showGeoUpdateDialog');
         }
     });
 
 
-    Template.geoportal.onCreated(function(){  
-        // declare markers array
-	var markers = {};
-
-        // when map is loaded  markers and its filters are initialized
-        GoogleMaps.ready('map', function(map) {
-
-	    // popup a form upon click on the map for inserting a new document into collection
-	    google.maps.event.addListener(map.instance, 'click', function(event) {
-	        Session.set('update_object', null);
-	        Session.set('update_object', {location:{lat:event.latLng.lat(), lng: event.latLng.lng() }});   // pass location of clicked on a map point to updating form
-	        Session.set('showGeoUpdateDialog', true);
-	    });
-
-	    // load icons for different types of entries
-	    var iconBase = 'http://www.google.com/mapfiles/ms/micons/';
-	    var icons = {
-                Transportation: {
-	            icon: iconBase + 'blue-dot.png'
-    	        },
-    	        Person: {
-		    icon: iconBase + 'red-dot.png'
-    	        },
-    	        Territory: {
-		    icon: iconBase + 'green-dot.png'
-    	        },
-    	        Facility: {
-		    icon: iconBase + 'yellow-dot.png'
-                },
-    	        Infrastructure: {
-	            icon: iconBase + 'pink-dot.png'
-    	        },
-    	        Undefined: {
-		    icon: iconBase + 'orange-dot.png'
-                }
-	    };
-	
-	    // array of selected values for filtering
-	    var selectedFilters = new Array(); 
-
-	    // get the array of elements of type "check box" except "fast selects"
-    	    var x = document.getElementsByClassName('chBox');
-
-	    // get the array of elements of type "check box" only for "select all" and "deselect all"
-	    var y = document.getElementsByClassName('chBoxFast');
-
-	    // process check boxes if "select all" or "deselect all" is checked
-	    for (var i=0;i<y.length;i++){
-	        y[i].addEventListener('click', function(){
-	            if (this.checked && this.value == 'SelectAll') {
-		        for (var j = 0; j < x.length; j++) {
-            	            if (x[j].type == 'checkbox') {
-                	        x[j].checked = true;
-			        selectedFilters = ['Infrastructure','Person','Facility','Territory','Undefined','Transportation']; 
-			        y[0].checked = false;
-             	            }
-         	        }
-	            } else {
-	                if (this.checked && this.value == 'DeselectAll'){
-	                    for (var i = 0; i < x.length; i++) {
-            	                if (x[i].type == 'checkbox') {
-                                    x[i].checked = false;
-			            y[1].checked = false;
-			            selectedFilters = [];
-			            //console.log(selectedFilters)
-             	                }
-         	            }
-     	                }
-		    }
-
-		    // fetch markers/data of selected categories
-		    setMarkers(selectedFilters);
-	        });
-	    }
-
-	    // process check boxes if different categories are selected for filtering displayed data/markers
-	    for(var i=0;i<x.length;i++){
-	        x[i].addEventListener('click', function(){ 
-		    if(this.checked){
-		        selectedFilters.push(this.value);
-	                console.log(this.value); 
-		    } else {
-		        var index = selectedFilters.indexOf(this.value);
-                        if(index > -1){
-                            selectedFilters.splice(index, 1);
-                        }
-		    }
-		    // reset "select all" and "deselect all"
-		    y[0].checked = false;
-		    y[1].checked = false;
-
-		    // fetch markers/data of selected categories
-		    setMarkers(selectedFilters);
-	        });
-	    }
-
-	    // initialized markers on the map
-	    var setMarkers = function(selectedFilters){
-	        // cleares all markers from the map
-	        var keys = Object.keys(markers);
-	        //console.log(keys);
-	        for (var i = 0; i < keys.length; i++) {
-    		    markers[keys[i]].setMap(null);
-		    //google.maps.event.clearInstanceListeners(markers[keys[i]]);
-		    //delete markers[keys[i]];
-	        }
-	        markers = [];
-
-		var markersObj = Objects.find({type:{ $in: selectedFilters}}).fetch();
-
-		markersObj.forEach(function(doc){
-                    var marker = new google.maps.Marker({
-                        //draggable: true,
-                        animation: google.maps.Animation.DROP,
-                        position: new google.maps.LatLng(doc.location.lat, doc.location.lng),
-                        map: map.instance,
-                        icon: icons[doc.type].icon,
-                        // We store the document _id on the marker in order
-                        // to update the document within the 'dragend' event below.
-                        id: doc._id
-                    });		    
-                    markers[doc._id] = marker;
-		    //console.log(doc._id);
-
-                    // text template for infowindow of a marker
-                    var infowindow = new google.maps.InfoWindow({
-                        content:
-                            '<div id="content">'+
-                            '<div id="siteNotice">'+
-                            '<h1 id="firstHeading" class="firstHeading">Object:</h1>' +
-                            '<div id="bodyContent">'+
-                            '<p><b>Type: </b>'+ doc.type + '</p>' +
-                            '<p><b>Name: </b>'+ doc.name + '</p>' +
-                            '<p><b>Severity Level: </b>'+ doc.slevel + '</p>' +
-                            '<p><b>Description: </b>'+ doc.description + '</p>' +
-                            '<p><b>Geolocation: </b></p>' +
-                            '<p><b>Latitude: </b> '+ doc.location.lat + '</p>' +
-                            '<p><b>Longitude: </b> '+ doc.location.lng + '</p>' +
-                            //'<button class="markerButton">Edit object</button>'+
-                            '</div>'+
-                            '</div>'
-                    });
-
-                    // pop up infowindow upon click on marker
-                    google.maps.event.addListener(marker,'click', function(event){
-                        console.log("marker clicked");
-                        infowindow.open(map.instance, marker);
-                    });
-		});
-            }
-        });
-    /*	   
-    var menu = document.querySelector('.nav');
-    console.log(menu);
-    var anchors = menu.getElementsByTagName('li');
-    console.log(anchors.length);
-    for (var i = 0; i < anchors.length; i += 1) {
-        anchors[i].addEventListener('click', function() { clickHandler(anchors[i]) }, false);
-    }
-
-    function clickHandler(anchor) {
-        var hasClass = anchor.getAttribute('class');
-        if (hasClass !== 'active') {
-            anchor.setAttribute('class', 'active');
-        }
-    } */
-
-        if (Meteor.isServer){
-            Meteor.publish(null, function () {
-                return Objects.find();
-            });
+    Objects.allow({
+        insert: function () {
+            return true;
+        },
+        remove: function () {
+            return true;
         }
     });
+
+    if (Meteor.isServer){
+        Meteor.publish(null, function () {
+            return Objects.find();
+        });
+    }
+
 }

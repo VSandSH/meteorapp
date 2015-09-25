@@ -47,8 +47,13 @@
             <h3>Update Object</h3>
         </div>
         <div class="modal-body">
-            {{> quickForm id="updateObjectForm" schema=Schemas.Obj type="update" collection="Objects" doc=selectedDoc}}
-	    {{> quickRemoveButton collection="Objects" _id=selectedDoc._id class="btn btn-danger" beforeRemove=beforeRemove}}
+	    {{#if typeIsTerritory}}
+                {{> quickForm id="updateObjectForm" schema=Schemas.Obj type="update" collection="Objects" doc=selectedDoc omitFields="location"}}
+	        {{> quickRemoveButton collection="Objects" _id=selectedDoc._id class="btn btn-danger" beforeRemove=beforeRemove}}
+	    {{else}}
+                {{> quickForm id="updateObjectForm" schema=Schemas.Obj type="update" collection="Objects" doc=selectedDoc omitFields="polygonLoc"}}
+                {{> quickRemoveButton collection="Objects" _id=selectedDoc._id class="btn btn-danger" beforeRemove=beforeRemove}}
+	    {{/if}}
             <a href="#" class="btn cancel" data-dismiss="modal">Cancel</a>
         </div>
         <div class="modal-footer">
@@ -64,8 +69,35 @@
 	    <h3>Add Object</h3>
 	</div>
 	<div class="modal-body">
-            {{> quickForm id="insertObjectForm" schema=Schemas.Obj type="insert" collection="Objects" doc=selectedDoc}}
+            <!--{{> quickForm id="insertObjectForm" schema=Schemas.Obj type="insert" collection="Objects" doc=selectedDoc}}-->
+<form>
+	    {{#autoForm schema=Schemas.Obj collection="Objects" type="insert" id="insertObjectForm" doc=selectedDoc setArrayItems=true}}
+ 	        {{> afQuickField name="type" options=optionsList}}
+	        {{#if afFieldValueIs name="type" value="Territory"}}
+	    	    {{> afQuickField name="name"}}
+	    	    {{> afQuickField name="slevel" options="allowed"}}
+	    	    {{> afQuickField name="description"}}
+		    {{#if addingNewObject}}
+	    	        {{> afArrayField name="polygonLoc"}}
+		    {{else}}
+	    	    	{{#afEachArrayItem name="polygonLoc"}}
+        	            {{> afFieldInput name=this.current.H}}  
+        	    	    {{> afFieldInput name=this.current.L}}
+    		    	{{/afEachArrayItem}}
+		    {{/if}}
+		{{else}}
+	    	    {{> afQuickField name="name"}}
+	    	    {{> afQuickField name="slevel" options="allowed"}}
+	    	    {{> afQuickField name="description"}}
+		    {{> afQuickField name="location.lat"}}
+	    	    {{> afQuickField name="location.lng"}}
+	        {{/if}}
+            <div class="form-group">
+	    <button type="submit" class="btn btn-primary submButton">Submit</button>
 	    <a href="#" class="btn cancel" data-dismiss="modal">Cancel</a>
+	    </div>
+	    {{/autoForm}}
+</form>
 	</div>
 	<div class="modal-footer">
 	</div>

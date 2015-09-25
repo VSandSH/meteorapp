@@ -1,16 +1,24 @@
-/* CSS declarations go here */
+/* CSS declarations go here 
 .map-container {
   position: absolute;
   margin: 30px;
   right: 50px;
-  width: 1000px;
-  height: 700px;
+  width: 900px;
+  height: 600px;
+}
+*/
+#map-canvas {
+  position: absolute;
+  margin: 30px;
+  right: 50px;
+  width: 900px;
+  height: 600px;
 }
 
 .filters {
   width: 200px;
   position: relative;
-  left: 80px;
+  left: 150px;
 }
 
 .page-header {
@@ -33,7 +41,7 @@
   position: relative;
   width: 200px;
   height: 50px;
-  left: 50px;
+  left: 130px;
 }
 
 #login-sign-in-link, #login-name-link {

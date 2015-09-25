@@ -1,11 +1,18 @@
 <template name="geoportal">
+
+    <!--<script type="text/javascript" src="https://maps.google.com/maps/api/js?sensor=false" async defer></script>key=AIzaSyBb0k1agCv1wxq0vgiiHdNaPINUVok83_Y
+    <script src="https://maps.googleapis.com/maps/api/js?v=3.21&libraries=drawing&sensor=false"
+         async defer></script>--><!--&callback=initMap"-->
+
     <nav class="navbar navbar-fixed-top navbar-inverse">
         <div class="navbar-inner">
         <!-- <a class="brand" href="#">Meteor App</a>-->
             <div>
                 <ul class="nav nav-pills">
+		    {{#if currentUser}}
                     <li ><a href="/">Objects</a></li>
                     <li class="active"><a href="/geoportal">Geoportal</a></li>
+		    {{/if}}
 		    <li><a href="#">{{> loginButtons}}</a></li>
                 </ul>
             </div>
@@ -17,7 +24,7 @@
         <div class="row-fluid">
             <div class="page-header">
 		<h1>Geoportal</h1>
-		{{> map}}
+		{{> gMap}}
 	    </div>
 	</div>
     </div>
@@ -27,6 +34,16 @@
 </template>
 
 
+<template name="gMap">
+
+    {{#if showGeoUpdateDialog}}
+    {{> editingForm}}
+    {{/if}}
+
+    <div id="map">
+	<div id="map-canvas"></div>
+    </div>
+</template>
 
 <template name="map">
 
